@@ -1,6 +1,7 @@
 package org.example.domain.credit.repository;
 
 import org.example.domain.credit.model.aggregate.TradeAggregate;
+import org.example.domain.credit.model.entity.CreditAccountEntity;
 
 /**
  * @Author atticus
@@ -9,4 +10,6 @@ import org.example.domain.credit.model.aggregate.TradeAggregate;
  */
 public interface IUserCreditOrderRepository {
     void saveUserCreditOrder(TradeAggregate tradeAggregate);
+
+    CreditAccountEntity queryUserCreditAccount(String userId);
 }

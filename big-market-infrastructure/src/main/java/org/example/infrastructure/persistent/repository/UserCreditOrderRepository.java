@@ -24,6 +24,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import javax.annotation.Resource;
 import javax.swing.*;
+import java.math.BigDecimal;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -119,6 +120,28 @@ public class UserCreditOrderRepository implements IUserCreditOrderRepository {
         }catch (Exception e){
             log.error("调整账户积分记录， 发送MQ消息失败 userId:{}, topic:{}",userId, task.getTopic());
             taskDao.updateTaskMessageStatus_Failed(task);
+        }
+    }
+
+    @Override
+    public CreditAccountEntity queryUserCreditAccount(String userId) {
+        UserCreditAccount userCreditAccount = new UserCreditAccount();
+        userCreditAccount.setUserId(userId);
+
+        try{
+            dbRouter.doRouter(userId);
+            UserCreditAccount userCreditAccountRes = userCreditAccountDao.queryUserCreditAccount(userCreditAccount);
+            BigDecimal availableAmount = BigDecimal.ZERO;
+            if (null != userCreditAccountRes) {
+                availableAmount = userCreditAccountRes.getAvailableAmount();
+            }
+
+            return CreditAccountEntity.builder()
+                    .userId(userId)
+                    .adjustAmount(availableAmount)
+                    .build();
+        }finally {
+            dbRouter.clear();
         }
     }
 }

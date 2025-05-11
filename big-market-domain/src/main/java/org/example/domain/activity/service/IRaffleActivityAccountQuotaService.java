@@ -3,6 +3,7 @@ package org.example.domain.activity.service;
 import org.example.domain.activity.model.entity.ActivityAccountEntity;
 import org.example.domain.activity.model.entity.DeliveryOrderEntity;
 import org.example.domain.activity.model.entity.SKURechargeEntity;
+import org.example.domain.activity.model.entity.UnpaidActivityOrderEntity;
 
 /**
  * @Author atticus
@@ -22,7 +23,7 @@ public interface IRaffleActivityAccountQuotaService {
      * @param: skuRechargeEntity 活动商品充值实体对象
      * @return: void
      **/
-    String createOrder(SKURechargeEntity skuRechargeEntity);
+    UnpaidActivityOrderEntity createOrder(SKURechargeEntity skuRechargeEntity);
 
 
     void updateOrder(DeliveryOrderEntity deliveryOrderEntity);

@@ -1,12 +1,12 @@
 package org.example.trigger.api;
 
-import org.example.trigger.api.dto.ActivityDrawRequestDTO;
-import org.example.trigger.api.dto.ActivityDrawResponseDTO;
-import org.example.trigger.api.dto.UserActivityAccountRequestDTO;
-import org.example.trigger.api.dto.UserActivityAccountResponseDTO;
+import org.example.trigger.api.dto.*;
+import org.example.types.enums.ResponseCode;
 import org.example.types.model.Response;
 
 import javax.annotation.Resource;
+import java.math.BigDecimal;
+import java.util.List;
 
 /**
  * @Author atticus
@@ -48,4 +48,25 @@ public interface IRaffleActivityService {
      * @return: Response<UserActivityAccountResponseDTO>    用户活动账户返回
      **/
     Response<UserActivityAccountResponseDTO> queryUserActivityAccount(UserActivityAccountRequestDTO userActivityAccountRequestDTO);
+
+    /**
+     * 通过积分兑换商品入口
+     * @param request   定义一个请求体，包含用户ID，和要兑换的sku
+     * @return          返回是否成功
+     */
+    Response<Boolean> creditExchangeSku(SkuProductShopRequestDTO request);
+
+    /**
+     * 查询用户积分账户明细
+     * @param userId
+     * @return          积分值
+     */
+    Response<BigDecimal> queryUserCreditAccount(String userId);
+
+    /**
+     * 查询sku商品列表
+     * @param activityId
+     * @return
+     */
+    Response<List<SkuProductResponseDTO>> querySkuProductByActivityId(Long activityId);
 }

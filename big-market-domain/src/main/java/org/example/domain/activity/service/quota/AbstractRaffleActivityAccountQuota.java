@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.example.domain.activity.model.aggregate.CreateQuotaOrderAggregate;
 import org.example.domain.activity.model.entity.*;
+import org.example.domain.activity.model.valobj.OrderTradeTypeVO;
 import org.example.domain.activity.repository.IActivityRepository;
 import org.example.domain.activity.service.IRaffleActivityAccountQuotaService;
 import org.example.domain.activity.service.quota.policy.ITradePolicy;
@@ -12,6 +13,7 @@ import org.example.domain.activity.service.quota.rule.factory.DefaultActivityCha
 import org.example.types.enums.ResponseCode;
 import org.example.types.exception.AppException;
 
+import java.math.BigDecimal;
 import java.util.Map;
 
 /**
@@ -30,7 +32,7 @@ public abstract class AbstractRaffleActivityAccountQuota extends RaffleActivityA
     }
 
     @Override
-    public String createOrder(SKURechargeEntity skuRechargeEntity) {
+    public UnpaidActivityOrderEntity createOrder(SKURechargeEntity skuRechargeEntity) {
         //1. 参数校验
         Long sku = skuRechargeEntity.getSku();
         String userId = skuRechargeEntity.getUserId();
@@ -38,10 +40,20 @@ public abstract class AbstractRaffleActivityAccountQuota extends RaffleActivityA
         if(null == sku || StringUtils.isBlank(userId) || StringUtils.isBlank(outBusinessNo)){
             throw new AppException(ResponseCode.ILLEGAL_PARAMETER.getCode(), ResponseCode.ILLEGAL_PARAMETER.getInfo());
         }
+        // 查询未支付的订单（限期一个月）
+        UnpaidActivityOrderEntity order = activityRepository.queryUnpaidActivityOrder(skuRechargeEntity);
+        if(null != order) return order;
         //2. 查询基础信息
         ActivitySkuEntity activitySkuEntity = queryActivitySku(sku);
         ActivityEntity activityEntity = queryRaffleActivityByActivityId(activitySkuEntity.getActivityId());
         ActivityCountEntity activityCountEntity = queryRaffleActivityCountByActivityCountId(activitySkuEntity.getActivityCountId());
+        // 账户额度校验
+        if(OrderTradeTypeVO.credit_pay_trade.equals(skuRechargeEntity.getOrderTradeTypeVO())){
+            BigDecimal availableAmount = activityRepository.queryUserCreditAccountAmount(userId);
+            if(availableAmount.compareTo(activitySkuEntity.getProductAmount()) < 0){
+                throw new AppException(ResponseCode.USER_CREDIT_ACCOUNT_NO_AVAILABLE_AMOUNT.getCode(),ResponseCode.USER_CREDIT_ACCOUNT_NO_AVAILABLE_AMOUNT.getInfo());
+            }
+        }
 
         //3. 活动动作规则校验
         IActionChain actionChain = defaultActivityChainFactory.openActionChain();
@@ -55,7 +67,13 @@ public abstract class AbstractRaffleActivityAccountQuota extends RaffleActivityA
         tradePolicy.trade(createOrderAggregate);
 
         //6. 返回订单
-        return createOrderAggregate.getActivityOrderEntity().getOrderId();
+        ActivityOrderEntity activityOrderEntity = createOrderAggregate.getActivityOrderEntity();
+        return UnpaidActivityOrderEntity.builder()
+                .userId(activityOrderEntity.getUserId())
+                .orderId(activityOrderEntity.getOrderId())
+                .outBusinessNo(activityOrderEntity.getOutBusinessNo())
+                .payAmount(activityOrderEntity.getPayAmount())
+                .build();
     }
 
 
